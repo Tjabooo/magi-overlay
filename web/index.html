@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>magi-overlay</title>
+<link rel="stylesheet" href="/assets/magi.css">
+<style>
+  html, body { overflow: auto; background: #120d0a; }
+  main { max-width: 880px; margin: 60px auto; padding: 0 24px; line-height: 1.6; }
+  a { color: var(--orange); } code { color: var(--gold); }
+  td { padding: 6px 18px 6px 0; } h2 { font-size: 13px; letter-spacing: 0.3em; color: var(--orange); margin-top: 36px; }
+</style></head>
+<body><main>
+  <div class="brand"><span class="hex">M</span>MAGI OVERLAY</div>
+  <p style="color:var(--sub)">Add each page as an OBS <b>Browser source</b> at your canvas size (or run <code>magi-overlay setup</code> to build the scenes).</p>
+  <h2>SCENE PAGES</h2>
+  <table id="pages"></table>
+  <h2>CONTROL DOCK</h2>
+  <p>OBS → Docks → Custom Browser Docks → <a href="/overlay/control">/overlay/control</a></p>
+</main>
+<script type="module">
+const pages = [["starting", "Countdown + boot sequence"], ["live", "Gameplay: camera frame, dossier, live match, chat"], ["chatting", "Big camera + chat + units"],
+  ["brb", "Be right back"], ["ending", "Session summary + roll call"], ["alerts", "Alerts (put in every scene)"]];
+const t = document.getElementById("pages");
+for (const [p, d] of pages) {
+  const tr = document.createElement("tr");
+  const a = document.createElement("a"); a.href = `/overlay/${p}`; a.textContent = location.origin + `/overlay/${p}`;
+  const td1 = document.createElement("td"); td1.append(a);
+  const td2 = document.createElement("td"); td2.textContent = d; td2.style.color = "var(--sub)";
+  tr.append(td1, td2); t.append(tr);
+}
+</script></body></html>

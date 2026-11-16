@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MAGI · Chatting</title>
+<link rel="stylesheet" href="/assets/magi.css"></head>
+<body><div class="stage">
+  <div class="backdrop"></div>
+  <div id="top"></div>
+  <div id="cam"></div>
+  <div id="units" class="abs" style="left:64px;top:1090px;width:1632px"></div>
+  <div class="abs" style="left:1744px;top:140px;width:752px;display:flex;flex-direction:column;gap:20px">
+    <div id="dossier"></div>
+    <div id="match"></div>
+  </div>
+  <div class="panel abs" style="left:1744px;top:712px;width:752px;height:608px">
+    <div class="ph"><span class="hex">02</span><span class="tag">COMMS</span><span class="role">LIVE CHAT</span></div>
+    <div id="chat" class="chat panelled" style="inset:0"></div>
+  </div>
+  <div id="ticker"></div>
+</div>
+<script type="module">
+import { S, on, fit, connect } from "/assets/magi.js";
+import { chat, camFrame, pilotCap, sysCap, dossierFull, matchStrip, units, topbar, ticker } from "/assets/widgets.js";
+fit();
+topbar(document.getElementById("top"), "OPEN CHANNEL");
+camFrame(document.getElementById("cam"), "chatting_cam", { top: pilotCap });
+units(document.getElementById("units"));
+dossierFull(document.getElementById("dossier"));
+matchStrip(document.getElementById("match"));
+chat(document.getElementById("chat"), { max: 30 });
+ticker(document.getElementById("ticker"));
+// The top bar sits where the camera caption would go: hide the caption on this scene.
+on("snapshot", () => document.querySelector("#cam .cap.top")?.classList.add("hidden"));
+connect();
+</script></body></html>

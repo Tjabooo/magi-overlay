@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MAGI · BRB</title>
+<link rel="stylesheet" href="/assets/magi.css"></head>
+<body><div class="stage">
+  <div class="backdrop"></div>
+  <div id="top"></div>
+  <div class="abs" style="left:64px;top:176px;width:1620px">
+    <div class="kicker" style="color:var(--red)">PATTERN BLUE · PILOT ABSENT</div>
+    <div class="title" style="margin-top:22px">BE RIGHT <em>BACK</em></div>
+    <div class="subline" id="msg" style="margin-top:26px;font-size:32px;color:var(--fg)"></div>
+    <div style="display:flex;align-items:flex-end;gap:40px;margin-top:40px">
+      <div class="huge" id="away" style="font-size:220px">00:00</div>
+      <div class="label" style="margin-bottom:34px;font-size:15px">TIME SINCE<br>DISCONNECT</div>
+    </div>
+    <div class="ticks" style="margin-top:30px;width:100%"></div>
+  </div>
+  <div id="units" class="abs" style="left:64px;top:1090px;width:1620px"></div>
+  <div class="abs" style="left:1744px;top:140px;width:752px;display:flex;flex-direction:column;gap:20px"><div id="dossier"></div><div id="match"></div></div>
+  <div class="panel abs" style="left:1744px;top:712px;width:752px;height:608px">
+    <div class="ph"><span class="hex">02</span><span class="tag">COMMS</span><span class="role">HOLDING PATTERN</span></div>
+    <div id="chat" class="chat panelled" style="inset:0"></div>
+  </div>
+  <div id="ticker"></div>
+</div>
+<script type="module">
+import { S, on, fit, connect, set, now, dur, every } from "/assets/magi.js";
+import { chat, dossierFull, matchStrip, units, topbar, ticker } from "/assets/widgets.js";
+fit();
+topbar(document.getElementById("top"), "STANDBY");
+units(document.getElementById("units"));
+dossierFull(document.getElementById("dossier"));
+matchStrip(document.getElementById("match"));
+chat(document.getElementById("chat"), { max: 30 });
+ticker(document.getElementById("ticker"));
+on("message", (m) => set("#msg", m.text || ""));
+const opened = Date.now();
+every(1000, () => {
+  const o = S.state.obs;
+  const since = o?.scene && /brb/i.test(o.scene) && o.scene_since ? o.scene_since : opened + S.offset;
+  set("#away", dur(now() - since));
+});
+connect();
+</script></body></html>

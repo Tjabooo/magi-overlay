@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>MAGI · Control</title>
+<link rel="stylesheet" href="/assets/magi.css">
+<style>
+  html, body { overflow: auto; background: #120d0a; }
+  body { padding: 14px; font-size: 13px; }
+  h2 { margin: 18px 0 8px; font-size: 11px; letter-spacing: 0.3em; color: var(--orange); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+  button, input { font: inherit; color: var(--fg); background: #1b1410; border: 1px solid #3a2c22; padding: 8px 10px; }
+  button { cursor: pointer; letter-spacing: 0.08em; }
+  button:hover { border-color: var(--orange); color: var(--orange); }
+  input { width: 100%; }
+  .st { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; color: var(--sub); }
+  .st b { color: var(--fg); font-weight: 600; }
+  .ok { color: var(--orange) !important; } .bad { color: var(--red) !important; }
+  .flex { display: flex; gap: 6px; }
+</style></head>
+<body>
+  <div class="brand" style="font-size:16px"><span class="hex">M</span>MAGI CONTROL</div>
+  <h2>STATUS</h2>
+  <div class="st" id="st"></div>
+  <h2>COUNTDOWN</h2>
+  <div class="grid">
+    <button data-cd="120">2 MIN</button><button data-cd="300">5 MIN</button><button data-cd="600">10 MIN</button>
+    <button data-cd="900">15 MIN</button><button data-cd="0">CLEAR</button>
+  </div>
+  <div class="flex" style="margin-top:6px"><input id="cdlabel" placeholder="Title (optional), e.g. PREMIER GRIND"></div>
+  <h2>BRB MESSAGE</h2>
+  <div class="flex"><input id="msg" placeholder="Away message"><button id="setmsg">SET</button></div>
+  <h2>TEST ALERTS</h2>
+  <div class="grid">
+    <button data-t="follow">FOLLOW</button><button data-t="sub">SUB</button><button data-t="resub">RESUB</button>
+    <button data-t="gift">GIFT</button><button data-t="giftbomb">GIFT BOMB</button><button data-t="raid">RAID</button>
+    <button data-t="bits">BITS</button><button data-t="redeem">REDEEM</button>
+  </div>
+  <h2>CHAT + SESSION</h2>
+  <div class="grid"><button id="chattest">TEST MSG</button><button id="clear">CLEAR CHAT</button><button id="reset">NEW SESSION</button></div>
+<script type="module">
+import { S, on, h, connect, now, dur } from "/assets/magi.js";
+const post = (a, body = {}) => fetch(`/api/${a}`, { method: "POST", headers: { "X-Magi": "1", "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const label = document.getElementById("cdlabel");
+for (const b of document.querySelectorAll("[data-cd]")) b.onclick = () => post("countdown", { seconds: +b.dataset.cd, label: label.value });
+const samples = {
+  sub: { tier: "TIER 1" }, resub: { tier: "TIER 1", months: 7, message: "Synchronisation ratio holding steady." },
+  gift: { tier: "TIER 1", recipient: "SHINJI" }, giftbomb: { amount: 5 }, raid: { amount: 42 },
+  bits: { amount: 500, message: "Cheer500 get in the robot" }, redeem: { reward: "Hydrate", amount: 500 },
+};
+for (const b of document.querySelectorAll("[data-t]")) b.onclick = () => post("alert", { kind: b.dataset.t, user: "MAGI_TEST", ...(samples[b.dataset.t] || {}) });
+document.getElementById("setmsg").onclick = () => post("message", { text: document.getElementById("msg").value });
+document.getElementById("chattest").onclick = () => post("chat-test", {});
+document.getElementById("clear").onclick = () => post("clear-chat");
+document.getElementById("reset").onclick = () => { if (confirm("Start a new session? Ending-scene counts reset.")) post("session-reset"); };
+on("message", (m) => { const i = document.getElementById("msg"); if (document.activeElement !== i) i.value = m.text || ""; });
+
+function render() {
+  const st = document.getElementById("st"), s = S.state;
+  const rows = [
+    ["OBS", s.obs?.connected ? (s.obs.streaming ? "LIVE" : "connected") : "offline", s.obs?.connected],
+    ["SCENE", s.obs?.scene || "—", true],
+    ["CHAT", s.chat_link?.up === false ? "reconnecting" : `#${S.config.channel || "—"}`, s.chat_link?.up !== false],
+    ["TWITCH API", S.config.twitch_api ? (s.stream ? `${s.stream.followers ?? "—"} followers` : "waiting") : "off", !!s.stream],
+    ["CS2 FEED", s.cs2?.active ? `${s.cs2.map} · ${s.cs2.kills}/${s.cs2.deaths}` : "idle", !!s.cs2?.active],
+    ["LEETIFY", s.leetify?.fetched_at ? `${dur(now() - s.leetify.fetched_at)} ago` : "—", !!s.leetify],
+    ["COUNTDOWN", s.countdown?.until ? dur(Math.max(0, s.countdown.until - now())) : "—", true],
+  ];
+  st.replaceChildren(...rows.flatMap(([k, v, ok]) => [h("span", "", k), h("b", ok ? "ok" : "bad", v)]));
+}
+setInterval(render, 1000);
+on("snapshot", render);
+connect();
+</script></body></html>

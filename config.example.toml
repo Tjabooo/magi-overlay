@@ -1,0 +1,44 @@
+# magi-overlay configuration → ~/.config/magi-overlay/config.toml (or $MAGI_OVERLAY_CONFIG)
+# Every key is optional; these are the defaults unless noted.
+
+[server]
+bind = "127.0.0.1:7788"          # keep it on loopback
+# web_dir = "/path/to/web"       # serve your own copy of the pages (theming); default: built-in
+
+[twitch]
+channel = ""                      # your channel login, e.g. "somestreamer" (chat works with just this)
+client_id = ""                    # your own Twitch app (Public client) → follows, viewers, badges, channel points
+                                  # then run `magi-overlay login` once
+
+[obs]
+url = "ws://127.0.0.1:4455"
+# password = ""                   # default: $OBS_WEBSOCKET_PASSWORD, then OBS's own websocket config on this machine
+camera = "Camera"                 # name of your camera source (used by `setup`)
+screen = "Screen Capture"         # name of your game/screen capture source
+live_scene = "stream"             # gameplay scene (created if missing)
+
+[media]
+players = []                      # playerctl player names, e.g. ["spotify"] (empty = any MPRIS player)
+disabled = false
+
+[overlay]
+pilot = ""                        # name on the overlay (default: channel in caps)
+tagline = "BROADCAST UNIT"
+ticker = []                       # extra ticker lines
+chat_fade_secs = 60               # gameplay chat fade (0 = never)
+alert_volume = 0.45               # 0.0 – 1.0
+brb_message = "Pilot has left the entry plug. Back shortly."
+next_stream = ""                  # shown on the ending scene
+
+[cs2]
+steam_id = ""                     # SteamID64 → Leetify profile stats (profile must be public on Leetify)
+leetify_key = ""                  # optional Leetify API key
+gsi_token = ""                    # `magi-overlay cs2-config` generates one
+cfg_dir = ""                      # CS2 cfg folder (auto-detected in the default Steam library)
+leetify_minutes = 5
+
+# Positions in a 2560×1440 design space (scaled to your canvas). Re-run `magi-overlay setup` after changes.
+[layout]
+cam = { x = 2040, y = 440, w = 496, h = 279 }
+chat = { x = 24, y = 500, w = 520, h = 440 }
+chatting_cam = { x = 64, y = 140, w = 1632, h = 918 }

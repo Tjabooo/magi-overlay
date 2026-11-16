@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MAGI · Starting</title>
+<link rel="stylesheet" href="/assets/magi.css"></head>
+<body><div class="stage">
+  <div class="backdrop"></div>
+  <div id="top"></div>
+  <div class="abs" style="left:64px;top:250px;width:1620px">
+    <div class="kicker">MAGI SYSTEM · BROADCAST INITIATION</div>
+    <div class="title" id="title" style="margin-top:22px">STREAM <em>STARTING</em></div>
+    <div class="huge" id="count" style="margin-top:46px">STAND BY</div>
+    <div class="subline" id="sub" style="margin-top:22px">ALL UNITS SYNCHRONISING</div>
+    <div class="ticks" style="margin-top:34px;width:100%"></div>
+  </div>
+  <div id="boot" class="units abs" style="left:64px;top:960px;width:1620px"></div>
+  <div class="abs" style="left:1744px;top:140px;width:752px"><div id="dossier"></div></div>
+  <div class="panel abs" style="left:1744px;top:648px;width:752px;height:672px">
+    <div class="ph"><span class="hex">02</span><span class="tag">COMMS</span><span class="role">WAITING ROOM</span></div>
+    <div id="chat" class="chat panelled" style="inset:0"></div>
+  </div>
+  <div id="ticker"></div>
+</div>
+<script type="module">
+import { S, on, h, fit, connect, set, now, dur, every, fmt, mapName } from "/assets/magi.js";
+import { chat, dossierFull, topbar, ticker } from "/assets/widgets.js";
+fit();
+topbar(document.getElementById("top"), "BOOT SEQUENCE");
+dossierFull(document.getElementById("dossier"));
+chat(document.getElementById("chat"), { max: 30 });
+ticker(document.getElementById("ticker"));
+
+const count = document.getElementById("count"), sub = document.getElementById("sub"), title = document.getElementById("title");
+every(250, () => {
+  const c = S.state.countdown;
+  const left = c?.until ? c.until - now() : null;
+  if (left === null) { count.style.fontSize = "180px"; set(count, "STAND BY"); set(sub, "ALL UNITS SYNCHRONISING"); }
+  else if (left > 0) { count.style.fontSize = ""; set(count, dur(left + 999)); set(sub, "T-MINUS TO TRANSMISSION"); }
+  else { count.style.fontSize = "180px"; set(count, "IMMINENT"); set(sub, "CONTACT IN ANY MOMENT"); }
+});
+on("countdown", (c) => {
+  title.innerHTML = "";
+  const label = (c.label || "").trim().toUpperCase();
+  if (label) title.append(label); else { title.append("STREAM "); title.append(h("em", "", "STARTING")); }
+});
+
+// Boot panels: typed log lines filled from live state, one-shot animation.
+function bootPanel(n, name, role, lines) {
+  const u = h("div", "panel unit");
+  const ph = h("div", "ph");
+  ph.append(h("span", "hex", "0" + n), h("span", "tag", name), h("span", "role", role));
+  const status = h("span", "right", "INITIALISING");
+  ph.append(status);
+  const log = h("div", "boot");
+  u.append(ph, log);
+  lines.forEach((fn, i) => {
+    const d = h("div");
+    d.style.animationDelay = (0.6 + n * 0.35 + i * 0.55) + "s";
+    log.append(d);
+    const paint = () => { const [txt, ok] = fn(); d.replaceChildren(txt + " ", h("span", "ok", ok)); };
+    paint();
+    setInterval(paint, 2000);
+  });
+  setTimeout(() => { status.textContent = "● ONLINE"; status.style.color = "var(--orange)"; }, (1 + n * 0.35 + lines.length * 0.55) * 1000);
+  return u;
+}
+const st = (k) => S.state[k] || {};
+document.getElementById("boot").append(
+  bootPanel(1, "MELCHIOR", "PERFORMANCE", [
+    () => [`CPU CORE ARRAY ${st("stats").cpu ?? "—"}% · ${st("stats").cpu_temp ?? "—"}°C`, "OK"],
+    () => [`GPU ${st("stats").gpu ?? "—"}% · ${st("stats").gpu_temp ?? "—"}°C · ${st("stats").gpu_power ?? "—"} W`, "OK"],
+    () => [`VRAM ${st("stats").vram_used ?? "—"} / ${st("stats").vram_total ?? "—"} GB`, "OK"],
+    () => ["ENCODER PIPELINE", "ARMED"],
+  ]),
+  bootPanel(2, "BALTHASAR", "COMMS", [
+    () => [`CHAT RELAY #${S.config.channel || "—"}`, st("chat_link").up === false ? "RETRY" : "LINKED"],
+    () => [`AUDIO FEED ${st("media").title ? "♪ " + st("media").title.slice(0, 22) : "IDLE"}`, "OK"],
+    () => [`OBS LINK ${st("obs").connected ? "ESTABLISHED" : "PENDING"}`, st("obs").connected ? "OK" : "…"],
+    () => [`SESSION MESSAGES ${fmt(S.session?.messages || 0)}`, "OK"],
+  ]),
+  bootPanel(3, "CASPER", "CHANNEL", [
+    () => [`FOLLOWERS ${fmt(st("stream").followers)}`, "SYNC"],
+    () => [`PILOT ${(st("leetify").name || S.config.overlay?.pilot || "—").toUpperCase()}`, "VERIFIED"],
+    () => [`PREMIER ${fmt(st("leetify").premier)} · AIM ${st("leetify").aim ? st("leetify").aim.toFixed(1) : "—"}`, "OK"],
+    () => [st("leetify").form?.length ? `LAST OP ${mapName(st("leetify").form[0].map)} ${st("leetify").form[0].outcome?.toUpperCase()}` : "LAST OP —", "LOGGED"],
+  ]),
+);
+connect();
+</script></body></html>

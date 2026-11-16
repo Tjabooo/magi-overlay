@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MAGI · Live</title>
+<link rel="stylesheet" href="/assets/magi.css"></head>
+<body><div class="stage">
+  <div id="cam"></div>
+  <div id="col" class="abs" style="display:flex;flex-direction:column;gap:12px"><div id="dossier"></div><div id="match"></div></div>
+  <div id="chat" class="chat"></div>
+</div>
+<script type="module">
+import { S, on, fit, connect } from "/assets/magi.js";
+import { chat, camFrame, pilotCap, sysCap, dossierCompact, matchStrip } from "/assets/widgets.js";
+fit();
+camFrame(document.getElementById("cam"), "cam", { top: pilotCap, bottom: sysCap });
+dossierCompact(document.getElementById("dossier"));
+matchStrip(document.getElementById("match"));
+const chatEl = document.getElementById("chat");
+// Layout first: chat trims to the box height when it renders.
+on("snapshot", () => {
+  const c = S.config.layout.cam, r = S.config.layout.chat;
+  Object.assign(document.getElementById("col").style, { left: c.x - 8 + "px", top: c.y + c.h + 58 + "px", width: c.w + 16 + "px" });
+  Object.assign(chatEl.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
+});
+chat(chatEl, { fade: () => S.config.overlay.chat_fade_secs, max: 12 });
+connect();
+</script></body></html>

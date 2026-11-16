@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MAGI · Ending</title>
+<link rel="stylesheet" href="/assets/magi.css"></head>
+<body><div class="stage">
+  <div class="backdrop"></div>
+  <div id="top"></div>
+  <div class="abs" style="left:64px;top:176px;width:1620px">
+    <div class="kicker">OPERATION COMPLETE · ALL UNITS STANDING DOWN</div>
+    <div class="title" style="margin-top:22px">THANKS FOR <em>WATCHING</em></div>
+    <div class="subline" id="next" style="margin-top:24px"></div>
+  </div>
+  <div id="tiles" class="tiles big abs" style="left:64px;top:440px;width:1620px"></div>
+  <div id="cs" class="panel abs" style="left:64px;top:880px;width:1620px">
+    <div class="ph"><span class="hex">03</span><span class="tag">CASPER</span><span class="role">COMBAT RECORD · THIS SESSION</span><span class="right">DATA · LEETIFY</span></div>
+    <div style="display:flex;align-items:center;gap:48px;padding:22px 24px 26px">
+      <div class="stat"><div class="v num" id="wl" style="font-size:56px">—</div><div class="k">WINS · LOSSES</div></div>
+      <div class="stat"><div class="v num" id="prem" style="font-size:56px">—</div><div class="k">PREMIER</div></div>
+      <div class="stat"><div class="v num" id="aim" style="font-size:56px;color:var(--gold)">—</div><div class="k">AIM RATING</div></div>
+      <div style="margin-left:auto" id="form"></div>
+    </div>
+  </div>
+  <div class="panel abs" style="left:1744px;top:140px;width:752px;height:1180px">
+    <div class="ph"><span class="hex">02</span><span class="tag">ROLL CALL</span><span class="role">THANK YOU</span></div>
+    <div class="credits"><div class="roll" id="roll"></div></div>
+  </div>
+  <div id="ticker"></div>
+</div>
+<script type="module">
+import { S, on, h, fit, connect, set, now, dur, every, fmt, mapName, tierColor, liveSince } from "/assets/magi.js";
+import { topbar, ticker } from "/assets/widgets.js";
+fit();
+topbar(document.getElementById("top"), "SESSION END");
+ticker(document.getElementById("ticker"));
+on("snapshot", () => set("#next", S.config.overlay.next_stream ? `NEXT TRANSMISSION · ${S.config.overlay.next_stream}` : "Transmission ending. Stay synchronised."));
+
+const tiles = {};
+for (const [k, label, hl] of [["dur", "DURATION"], ["peak", "PEAK VIEWERS"], ["follows", "NEW FOLLOWERS", 1], ["subs", "SUBS + GIFTS", 1],
+  ["raids", "RAIDS"], ["bits", "BITS"], ["msgs", "MESSAGES"], ["chatters", "CHATTERS"]]) {
+  const t = h("div", "panel tile" + (hl ? " hl" : ""));
+  const v = h("div", "v", "—");
+  t.append(v, h("div", "k", label));
+  document.getElementById("tiles").append(t);
+  tiles[k] = v;
+}
+every(1000, () => {
+  const s = S.session || {};
+  const start = liveSince() || s.started_at;
+  set(tiles.dur, start ? dur(now() - start, true) : "—");
+});
+on("session", (s) => {
+  set(tiles.peak, fmt(s.peak_viewers || 0));
+  set(tiles.follows, fmt((s.follows || []).length));
+  set(tiles.subs, fmt((s.subs || []).length + (s.gifts || 0)));
+  set(tiles.raids, fmt((s.raids || []).length));
+  set(tiles.bits, fmt(s.bits || 0));
+  set(tiles.msgs, fmt(s.messages || 0));
+  set(tiles.chatters, fmt((s.chatters || []).length));
+  roll(s);
+});
+on("leetify", (L) => {
+  const se = L.session || {};
+  set("#wl", se.wins + se.losses ? `${se.wins} · ${se.losses}` : "0 · 0");
+  const p = document.getElementById("prem");
+  p.replaceChildren(fmt(L.premier));
+  p.style.color = tierColor(L.premier);
+  if (se.premier_delta) p.append(h("small", "", ` ${se.premier_delta > 0 ? "▲+" : "▼"}${fmt(se.premier_delta)}`));
+  set("#aim", L.aim ? L.aim.toFixed(1) : "—");
+  const f = h("div", "form");
+  for (const m of (L.form || []).filter((m) => m.finished_at >= (se.since || 0)).slice(0, 10).reverse()) {
+    f.append(h("i", m.outcome === "loss" ? "loss" : "win", mapName(m.map).slice(0, 2)));
+  }
+  document.getElementById("form").replaceChildren(f);
+});
+
+let lastKey = "";
+function roll(s) {
+  const groups = [["NEW PILOTS", s.follows], ["SYNC CONTRACTS", s.subs], ["RAID LEADERS", (s.raids || []).map(([n, v]) => `${n} · ${v}`)],
+    ["ENERGY DONORS", s.cheerers], ["COMMS", s.chatters]];
+  const key = JSON.stringify(groups);
+  if (key === lastKey) return;
+  lastKey = key;
+  const r = document.getElementById("roll");
+  r.replaceChildren();
+  let n = 0;
+  for (const [title, names] of groups) {
+    if (!names?.length) continue;
+    r.append(h("h4", "", title));
+    for (const x of names) { r.append(h("div", "", x)); n++; }
+  }
+  if (!n) r.append(h("h4", "", "QUIET SKIES"), h("div", "", "Thanks for stopping by."));
+  // Roll only when the list is taller than the panel.
+  requestAnimationFrame(() => {
+    const box = r.parentElement.clientHeight;
+    if (r.scrollHeight > box) {
+      r.classList.add("moving");
+      r.style.setProperty("--from", box + "px");
+      r.style.setProperty("--dur", Math.max(20, (r.scrollHeight + box) / 40) + "s");
+    } else r.classList.remove("moving");
+  });
+}
+connect();
+</script></body></html>

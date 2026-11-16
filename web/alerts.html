@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MAGI · Alerts</title>
+<link rel="stylesheet" href="/assets/magi.css">
+<style>
+  .alert { position: absolute; left: 50%; top: 120px; width: 1180px; margin-left: -590px;
+    clip-path: inset(0 50% 0 50%); transition: clip-path 0.45s cubic-bezier(.7,0,.2,1); }
+  .alert.open { clip-path: inset(0 0 0 0); }
+  .alert .inner { padding-bottom: 30px; }
+  .alert .ph { padding: 18px 26px 0; }
+  .alert .ph .tag { font-size: 15px; }
+  .votes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 18px 26px 0; }
+  .vote { position: relative; height: 66px; display: flex; flex-direction: column; justify-content: center; padding: 0 18px;
+    border: 1px solid var(--line); background: rgba(27, 20, 16, 0.9); transition: background 0.18s, color 0.18s, border-color 0.18s; }
+  .vote .n { font-size: 15px; font-weight: 800; letter-spacing: 0.3em; color: var(--sub); }
+  .vote .s { font-size: 12px; letter-spacing: 0.3em; color: var(--dim); margin-top: 6px; }
+  .vote.yes { background: var(--orange); border-color: var(--orange); }
+  .vote.yes .n, .vote.yes .s { color: var(--bg); }
+  .alert.red .vote.yes { background: var(--red); border-color: var(--red); }
+  .body { padding: 26px 26px 0; opacity: 0; transform: translateY(18px); transition: opacity 0.45s, transform 0.6s cubic-bezier(.2,.9,.3,1); }
+  .body.show { opacity: 1; transform: none; }
+  .kick { font-size: 22px; font-weight: 800; letter-spacing: 0.45em; color: var(--orange); }
+  .alert.red .kick { color: var(--red); }
+  .who { margin-top: 12px; font-size: 104px; font-weight: 800; line-height: 1; color: var(--gold); letter-spacing: 0.01em;
+    white-space: nowrap; text-shadow: 0 0 40px rgba(255, 140, 26, 0.35); }
+  .detail { margin-top: 16px; font-size: 30px; font-weight: 700; letter-spacing: 0.12em; color: var(--fg); }
+  .says { margin-top: 14px; font-size: 26px; color: var(--sub); font-style: italic; overflow-wrap: anywhere; max-height: 72px; overflow: hidden; }
+  .scan { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--orange); opacity: 0; box-shadow: 0 0 22px var(--orange); }
+  .alert.open .scan { animation: scan 1.1s 0.3s ease-in-out 1 both; }
+  @keyframes scan { 0% { top: 0; opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+</style></head>
+<body><div class="stage">
+  <div id="alert" class="alert"><div class="panel solid" id="box" style="--c:28px">
+    <div class="scan"></div>
+    <div class="inner">
+      <div class="ph"><span class="hex">M</span><span class="tag" id="res">MAGI · RESOLUTION</span><span class="right" id="proto"></span></div>
+      <div class="votes" id="votes"></div>
+      <div class="body" id="body">
+        <div class="kick" id="kick"></div>
+        <div class="who" id="who"></div>
+        <div class="detail" id="detail"></div>
+        <div class="says" id="says"></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+<script type="module">
+import { S, on, h, fit, connect, fmt } from "/assets/magi.js";
+fit();
+
+const KINDS = {
+  follow:   { kick: "NEW PILOT REGISTERED", proto: "PROTOCOL 01 · FOLLOW", ms: 7000, detail: () => "joined the roster" },
+  sub:      { kick: "SYNCHRONISATION CONTRACT", proto: "PROTOCOL 02 · SUB", ms: 9000, detail: (a) => `${a.tier || "TIER 1"} · NEW CONTRACT` },
+  resub:    { kick: "SYNC RENEWED", proto: "PROTOCOL 02 · RESUB", ms: 9000, detail: (a) => `${a.tier || "TIER 1"} · ${a.months || 1} MONTHS` },
+  gift:     { kick: "CONTRACT GIFTED", proto: "PROTOCOL 03 · GIFT", ms: 8000, detail: (a) => `${a.tier || "TIER 1"} → ${a.recipient || "A PILOT"}` },
+  giftbomb: { kick: "MASS SYNCHRONISATION", proto: "PROTOCOL 03 · GIFT BOMB", ms: 10000, detail: (a) => `${fmt(a.amount)} CONTRACTS GIFTED · ${a.tier || "TIER 1"}` },
+  raid:     { kick: "INCOMING RAID", proto: "PROTOCOL 07 · RAID", ms: 12000, red: true, detail: (a) => `${fmt(a.amount)} UNITS INBOUND` },
+  bits:     { kick: "ENERGY TRANSFER", proto: "PROTOCOL 04 · BITS", ms: 8000, detail: (a) => `${fmt(a.amount)} BITS` },
+  redeem:   { kick: "PRIORITY ORDER", proto: "PROTOCOL 05 · CHANNEL POINTS", ms: 7000, detail: (a) => `${a.reward || "REWARD"}${a.amount ? " · " + fmt(a.amount) + " PTS" : ""}` },
+};
+const UNITS = [["MELCHIOR·1"], ["BALTHASAR·2"], ["CASPER·3"]];
+
+// ── sound: synthesized, no assets ──
+let ac;
+function tone(freq, at, len, type = "sine", gain = 0.5, slide) {
+  const vol = Math.max(0, Math.min(1, S.config.overlay?.alert_volume ?? 0.45));
+  if (!vol) return;
+  ac ||= new AudioContext();
+  const t = ac.currentTime + at;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + len);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain * vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g).connect(ac.destination);
+  o.start(t);
+  o.stop(t + len + 0.05);
+}
+const blip = (i) => tone([880, 1108.7, 1318.5][i], 0, 0.11, "square", 0.18);
+function reveal(red) {
+  if (red) { tone(110, 0, 1.4, "sawtooth", 0.25, 220); tone(220, 0.05, 1.2, "square", 0.12, 440); return; }
+  [440, 554.4, 659.3, 880].forEach((f, i) => tone(f, i * 0.04, 1.1, "triangle", 0.28));
+}
+
+const el = document.getElementById("alert");
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const queue = [];
+let busy = false;
+
+async function play(a) {
+  const k = KINDS[a.kind] || { kick: (a.kind || "NOTICE").toUpperCase(), proto: "PROTOCOL 00", ms: 6000, detail: () => "" };
+  const n = (Number(localStorage.getItem("magi-res") || 41) + 1) % 10000;
+  localStorage.setItem("magi-res", n);
+  $("res").textContent = `MAGI · RESOLUTION #${String(n).padStart(4, "0")}`;
+  $("proto").textContent = k.proto + (a.test ? " · TEST" : "");
+  el.classList.toggle("red", !!k.red);
+  $("box").classList.toggle("alert-red", !!k.red);
+  const votes = $("votes");
+  votes.replaceChildren(...UNITS.map(([n]) => { const v = h("div", "vote"); v.append(h("div", "n", n), h("div", "s", "DELIBERATING…")); return v; }));
+  $("kick").textContent = k.kick;
+  $("who").textContent = a.user || "UNKNOWN";
+  // Monospace: 0.6 em per character. Shrink long names to fit the panel instead of clipping.
+  $("who").style.fontSize = Math.min(104, Math.floor(1120 / (Math.max(1, $("who").textContent.length) * 0.62))) + "px";
+  $("detail").textContent = k.detail(a);
+  $("says").textContent = a.message || "";
+  $("body").classList.remove("show");
+  el.classList.remove("hidden");
+  void el.offsetWidth;
+  el.classList.add("open");
+  await sleep(500);
+  for (let i = 0; i < 3; i++) {
+    const v = votes.children[i];
+    v.classList.add("yes");
+    v.querySelector(".s").textContent = k.red ? "UNANIMOUS" : "APPROVED";
+    blip(i);
+    await sleep(330);
+  }
+  $("body").classList.add("show");
+  reveal(k.red);
+  await sleep(k.ms);
+  el.classList.remove("open");
+  await sleep(500);
+  el.classList.add("hidden");
+}
+
+async function pump() {
+  if (busy) return;
+  busy = true;
+  while (queue.length) {
+    await play(queue.shift());
+    await sleep(600);
+  }
+  busy = false;
+}
+el.classList.add("hidden");
+on("alert", (a) => { queue.push(a); pump(); });
+// Preview: /overlay/alerts?test=raid plays a sample locally (nothing is sent to the server).
+const preview = new URLSearchParams(location.search).get("test");
+if (preview) {
+  const sample = { follow: {}, sub: { tier: "TIER 1" }, resub: { tier: "TIER 1", months: 7, message: "Synchronisation ratio holding steady." },
+    gift: { recipient: "SHINJI" }, giftbomb: { amount: 5 }, raid: { amount: 42 }, bits: { amount: 500, message: "get in the robot" },
+    redeem: { reward: "Hydrate", amount: 500 } }[preview] || {};
+  setTimeout(() => { queue.push({ kind: preview, user: "MAGI_TEST", test: true, ...sample }); pump(); }, 300);
+}
+connect();
+</script></body></html>
