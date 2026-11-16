@@ -90,6 +90,12 @@ Discord webhook). `POST /api/channel` changes the channel info mid-stream, `POST
 `/api/presets` keeps reusable setups. Twitch has no API for the go-live push notification text itself;
 edit that one in Stream Manager.
 
+For a touch panel (a tablet next to the PC): `GET /api/health` returns stream health (bitrate, dropped and
+render-lagged frames, congestion, OBS fps/CPU, stream-mic and privacy state); `POST /api/privacy {"on": true,
+"secs": 10}` hides the `[obs] screen` source in every scene for a few seconds (a message on the overlay says why);
+`POST /api/stream-mic` toggles the `[obs] mic` input (the stream hears nothing, Discord still does); `POST /api/clip`
+makes a Twitch clip of the last ~30 s and returns its URL (scope `clips:edit`: run `magi-overlay login` again).
+
 Preview any page in a browser at `http://127.0.0.1:7788/`; `/overlay/alerts?test=sub` plays a sample alert locally.
 
 ## Configuration

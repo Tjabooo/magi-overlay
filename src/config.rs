@@ -75,8 +75,10 @@ pub struct Obs {
     pub password: Option<String>,
     /// Name of the camera source used by `setup`.
     pub camera: String,
-    /// Name of the game/screen capture source used by `setup`.
+    /// Name of the game/screen capture source used by `setup` (and hidden by the deck's privacy screen).
     pub screen: String,
+    /// Mic input muted by the deck's stream-only mic button.
+    pub mic: String,
     /// Scene that shows gameplay (created if missing).
     pub live_scene: String,
 }
@@ -88,6 +90,7 @@ impl Default for Obs {
             password: None,
             camera: "Camera".into(),
             screen: "Screen Capture".into(),
+            mic: "Mic/Aux".into(),
             live_scene: "stream".into(),
         }
     }

@@ -104,6 +104,7 @@ impl Cs2 {
             "active": true, "in_menu": false, "map": map_name, "mode": s(&map["mode"]), "phase": phase,
             "round": round, "score_ct": n(&map["team_ct"]["score"]), "score_t": n(&map["team_t"]["score"]),
             "round_phase": s(&v["round"]["phase"]),
+            "bomb": s(&v["round"]["bomb"]),
         });
         // While dead/spectating, "player" is whoever we watch: only use our own data.
         if s(&p["steamid"]) == me && !me.is_empty() {

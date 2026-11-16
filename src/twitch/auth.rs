@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 
 pub const SCOPES: &str =
     "moderator:read:followers channel:read:redemptions channel:read:subscriptions bits:read \
-     channel:manage:broadcast moderator:manage:announcements user:write:chat";
+     channel:manage:broadcast moderator:manage:announcements user:write:chat clips:edit";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tokens {

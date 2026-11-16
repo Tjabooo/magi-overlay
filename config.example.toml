@@ -15,6 +15,7 @@ url = "ws://127.0.0.1:4455"
 # password = ""                   # default: $OBS_WEBSOCKET_PASSWORD, then OBS's own websocket config on this machine
 camera = "Camera"                 # name of your camera source (used by `setup`)
 screen = "Screen Capture"         # name of your game/screen capture source
+mic = "Mic/Aux"                   # mic input muted by POST /api/stream-mic
 live_scene = "stream"             # gameplay scene (created if missing)
 
 [media]

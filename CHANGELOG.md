@@ -4,6 +4,12 @@ All notable changes to this project are listed here ([Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-16
+
+- Touch-panel endpoints: `GET /api/health`, `POST /api/privacy`, `POST /api/stream-mic`, `POST /api/clip`
+  (new scope `clips:edit`: run `magi-overlay login` again). New `[obs] mic` setting.
+- CS2 state includes `bomb` (planted / defused / exploded) from game state integration.
+
 ## [0.2.2] - 2026-11-16
 
 - `POST /api/say {"text": …}` sends a chat message as the broadcaster (new scope `user:write:chat`:

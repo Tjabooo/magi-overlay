@@ -2,6 +2,7 @@
 
 mod config;
 mod cs2;
+mod deck;
 mod demo;
 mod golive;
 mod hub;

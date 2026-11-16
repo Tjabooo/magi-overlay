@@ -117,6 +117,16 @@ fn guard(h: &HeaderMap) -> Result<(), StatusCode> {
     }
 }
 
+async fn health(State(app): State<App>, headers: HeaderMap) -> Result<Json<Value>, StatusCode> {
+    guard(&headers)?;
+    match crate::deck::health(app.hub.clone()).await {
+        Ok(v) => Ok(Json(v)),
+        Err(e) => Ok(Json(
+            serde_json::json!({ "ok": false, "err": format!("{e:#}") }),
+        )),
+    }
+}
+
 async fn control(
     State(app): State<App>,
     Path(action): Path<String>,
@@ -164,6 +174,9 @@ async fn act(
         "channel" => Some(crate::golive::update(hub.clone(), v.clone()).await),
         "say" => Some(crate::golive::say(v["text"].as_str().unwrap_or("")).await),
         "scene" => Some(crate::golive::scene(hub.clone(), v["scene"].as_str().unwrap_or("")).await),
+        "privacy" => Some(crate::deck::privacy(hub.clone(), v.clone()).await),
+        "stream-mic" => Some(crate::deck::stream_mic(hub.clone(), v.clone()).await),
+        "clip" => Some(crate::deck::clip().await),
         _ => None,
     };
     if let Some(r) = res {
@@ -237,6 +250,7 @@ pub fn router(app: App) -> Router {
         .route("/assets/{name}", get(file))
         .route("/events", get(events))
         .route("/api/state", get(state))
+        .route("/api/health", get(health))
         .route("/api/channel", get(channel).post(post_channel))
         .route("/api/categories", get(categories))
         .route("/api/presets", get(presets).post(post_presets))
