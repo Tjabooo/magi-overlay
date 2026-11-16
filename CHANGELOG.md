@@ -4,6 +4,11 @@ All notable changes to this project are listed here ([Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-16
+
+- `POST /api/say {"text": …}` sends a chat message as the broadcaster (new scope `user:write:chat`:
+  run `magi-overlay login` again).
+
 ## [0.2.1] - 2026-11-16
 
 - `POST /api/channel`: change title, category, tags, language and mature label mid-stream (no OBS involved);

@@ -194,6 +194,32 @@ pub async fn update(hub: Arc<Hub>, req: Value) -> Result<Value> {
     Ok(json!({ "ok": true, "channel": body }))
 }
 
+/// Send a chat message as the broadcaster.
+pub async fn say(text: &str) -> Result<Value> {
+    let (h, id) = api()?;
+    let msg: String = text.trim().chars().take(500).collect();
+    if msg.is_empty() {
+        bail!("empty message");
+    }
+    let r = h
+        .post(
+            "/chat/messages",
+            &json!({ "broadcaster_id": id, "sender_id": id, "message": msg }),
+        )
+        .await
+        .context("sending (run `magi-overlay login` again if this says unauthorized)")?;
+    let d = &r["data"][0];
+    if d["is_sent"] == false {
+        bail!(
+            "Twitch dropped it: {}",
+            d["drop_reason"]["message"]
+                .as_str()
+                .unwrap_or("no reason given")
+        );
+    }
+    Ok(json!({ "ok": true, "id": d["message_id"] }))
+}
+
 /// Switch OBS's program scene.
 pub async fn scene(hub: Arc<Hub>, name: &str) -> Result<Value> {
     if name.is_empty() {

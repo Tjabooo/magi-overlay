@@ -162,6 +162,7 @@ async fn act(
         "endstream" => Some(crate::golive::end(hub.clone(), v["after_secs"].as_u64()).await),
         "presets" => Some(crate::golive::save_preset(&v)),
         "channel" => Some(crate::golive::update(hub.clone(), v.clone()).await),
+        "say" => Some(crate::golive::say(v["text"].as_str().unwrap_or("")).await),
         "scene" => Some(crate::golive::scene(hub.clone(), v["scene"].as_str().unwrap_or("")).await),
         _ => None,
     };

@@ -1,6 +1,6 @@
 [package]
 name = "magi-overlay"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "Self-hosted, MAGI-themed stream overlay for OBS: Twitch chat, alerts, live system stats, now playing, scene pages"
 license = "MIT"

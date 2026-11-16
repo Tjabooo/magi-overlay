@@ -84,7 +84,7 @@ magi-overlay status                  # what the overlay currently knows
 
 It updates the Twitch channel, sets the countdown, switches OBS to the opening scene and starts the stream.
 Once OBS is live it posts `notify` as a chat announcement and runs `[golive] notify_command` (for example a
-Discord webhook). `POST /api/channel` changes the channel info mid-stream, `POST /api/scene` switches scenes, and
+Discord webhook). `POST /api/channel` changes the channel info mid-stream, `POST /api/scene` switches scenes, `POST /api/say` writes in chat, and
 `POST /api/endstream` switches to the ending scene and stops the stream
 `end_delay_secs` later. `GET /api/channel` and `GET /api/categories?q=…` feed a UI of your own, and
 `/api/presets` keeps reusable setups. Twitch has no API for the go-live push notification text itself;
