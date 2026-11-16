@@ -3,6 +3,7 @@
 mod config;
 mod cs2;
 mod demo;
+mod golive;
 mod hub;
 mod media;
 mod obs;

@@ -37,6 +37,12 @@ gsi_token = ""                    # `magi-overlay cs2-config` generates one
 cfg_dir = ""                      # CS2 cfg folder (auto-detected in the default Steam library)
 leetify_minutes = 5
 
+[golive]
+notify_command = ""               # run once you're live; text on stdin, $MAGI_TITLE/$MAGI_GAME/$MAGI_URL set
+                                  # e.g. Discord webhook: "jq -Rs '{content: .}' | curl -s -H 'Content-Type: application/json' -d @- https://discord.com/api/webhooks/ID/TOKEN"
+ending_scene = "ending"
+end_delay_secs = 30
+
 # Positions in a 2560×1440 design space (scaled to your canvas). Re-run `magi-overlay setup` after changes.
 [layout]
 cam = { x = 2040, y = 440, w = 496, h = 279 }

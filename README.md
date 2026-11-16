@@ -73,6 +73,22 @@ magi-overlay session-reset           # start counting a new session now
 magi-overlay status                  # what the overlay currently knows
 ```
 
+### Going live
+
+`POST /api/golive` (with an `X-Magi: 1` header) does the whole start in one call:
+
+```json
+{ "title": "Premier grind", "game_id": "32399", "tags": "English, CS2", "language": "en",
+  "profanity": false, "start_scene": "starting", "countdown_secs": 300, "notify": "Live now: Premier grind" }
+```
+
+It updates the Twitch channel, sets the countdown, switches OBS to the opening scene and starts the stream.
+Once OBS is live it posts `notify` as a chat announcement and runs `[golive] notify_command` (for example a
+Discord webhook). `POST /api/endstream` switches to the ending scene and stops the stream
+`end_delay_secs` later. `GET /api/channel` and `GET /api/categories?q=…` feed a UI of your own, and
+`/api/presets` keeps reusable setups. Twitch has no API for the go-live push notification text itself;
+edit that one in Stream Manager.
+
 Preview any page in a browser at `http://127.0.0.1:7788/`; `/overlay/alerts?test=sub` plays a sample alert locally.
 
 ## Configuration

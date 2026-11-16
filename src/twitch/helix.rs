@@ -59,6 +59,10 @@ impl Helix {
         self.send(reqwest::Method::POST, path, Some(body)).await
     }
 
+    pub async fn patch(&self, path: &str, body: &Value) -> Result<Value> {
+        self.send(reqwest::Method::PATCH, path, Some(body)).await
+    }
+
     pub async fn user_id(&self, login: &str) -> Result<String> {
         let v = self.get(&format!("/users?login={login}")).await?;
         match v["data"][0]["id"].as_str() {

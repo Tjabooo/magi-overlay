@@ -4,7 +4,10 @@ pub mod helix;
 pub mod irc;
 
 use crate::hub::{Badges, Hub};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+
+/// The logged-in API client + broadcaster id, once known (used by the go-live endpoints).
+pub static API: OnceLock<(Arc<helix::Helix>, String)> = OnceLock::new();
 
 /// Start chat (always, anonymous) and — with a client ID + login — API polling and EventSub.
 pub async fn start(hub: Arc<Hub>) {
@@ -26,6 +29,7 @@ pub async fn start(hub: Arc<Hub>) {
             });
             match helix.user_id(&channel).await {
                 Ok(id) => {
+                    let _ = API.set((helix.clone(), id.clone()));
                     helix.load_badges(&id, &badges).await;
                     tokio::spawn(helix::poll(hub.clone(), helix.clone(), id.clone()));
                     tokio::spawn(eventsub::run(hub.clone(), helix, id));

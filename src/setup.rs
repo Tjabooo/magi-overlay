@@ -99,6 +99,27 @@ async fn ensure_browser(
     Ok(())
 }
 
+/// Camera: a new item gets the full transform; an existing one only moves/resizes, so crops and
+/// stretch you set by hand in OBS survive re-running `setup`.
+async fn place_cam(obs: &Obs, scene: &str, source: &str, t: Value) -> Result<i64> {
+    let existed = obs
+        .call(
+            "GetSceneItemId",
+            json!({ "sceneName": scene, "sourceName": source }),
+        )
+        .await
+        .is_ok();
+    let id = ensure_item(obs, scene, source).await?;
+    let t = if existed {
+        json!({ "positionX": t["positionX"], "positionY": t["positionY"],
+                "boundsWidth": t["boundsWidth"], "boundsHeight": t["boundsHeight"] })
+    } else {
+        t
+    };
+    place(obs, scene, id, t).await?;
+    Ok(id)
+}
+
 async fn ensure_item(obs: &Obs, scene: &str, source: &str) -> Result<i64> {
     if let Ok(v) = obs
         .call(
@@ -205,8 +226,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
                 stack.push(id);
             }
             if cam {
-                let id = ensure_item(&obs, scene, &cfg.obs.camera).await?;
-                place(&obs, scene, id, rect(cfg.layout.cam, k)).await?;
+                let id = place_cam(&obs, scene, &cfg.obs.camera, rect(cfg.layout.cam, k)).await?;
                 stack.push(id);
             }
             let id = ensure_item(&obs, scene, page.source).await?;
@@ -217,8 +237,13 @@ pub async fn run(cfg: &Config) -> Result<()> {
             place(&obs, scene, id, full()).await?;
             stack.push(id);
             if scene == "chatting" && cam {
-                let id = ensure_item(&obs, scene, &cfg.obs.camera).await?;
-                place(&obs, scene, id, rect(cfg.layout.chatting_cam, k)).await?;
+                let id = place_cam(
+                    &obs,
+                    scene,
+                    &cfg.obs.camera,
+                    rect(cfg.layout.chatting_cam, k),
+                )
+                .await?;
                 stack.push(id);
             }
         }

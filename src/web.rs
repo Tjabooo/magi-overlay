@@ -3,7 +3,7 @@
 use crate::cs2::Cs2;
 use crate::hub::{now_ms, Hub};
 use axum::body::Bytes;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
@@ -11,6 +11,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use futures_util::stream::{self, Stream, StreamExt};
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio_stream::wrappers::BroadcastStream;
@@ -129,6 +130,18 @@ async fn control(
         serde_json::from_slice(&body).map_err(|_| StatusCode::BAD_REQUEST)?
     };
     let hub = &app.hub;
+    let res = match action.as_str() {
+        "golive" => Some(crate::golive::go(hub.clone(), v.clone()).await),
+        "endstream" => Some(crate::golive::end(hub.clone(), v["after_secs"].as_u64()).await),
+        "presets" => Some(crate::golive::save_preset(&v)),
+        _ => None,
+    };
+    if let Some(r) = res {
+        return Ok(Json(match r {
+            Ok(v) => v,
+            Err(e) => json!({ "ok": false, "error": format!("{e:#}") }),
+        }));
+    }
     match action.as_str() {
         "countdown" => {
             let secs = v["seconds"].as_i64().unwrap_or(0).clamp(0, 6 * 3600);
@@ -157,6 +170,25 @@ async fn control(
     Ok(Json(json!({ "ok": true })))
 }
 
+fn result(r: anyhow::Result<Value>) -> Json<Value> {
+    Json(match r {
+        Ok(v) => v,
+        Err(e) => json!({ "ok": false, "error": format!("{e:#}") }),
+    })
+}
+
+async fn channel() -> Json<Value> {
+    result(crate::golive::channel().await)
+}
+
+async fn categories(Query(q): Query<HashMap<String, String>>) -> Json<Value> {
+    result(crate::golive::categories(q.get("q").map(String::as_str).unwrap_or("")).await)
+}
+
+async fn presets() -> Json<Value> {
+    Json(crate::golive::presets())
+}
+
 async fn gsi(State(app): State<App>, body: Bytes) -> StatusCode {
     let Ok(v) = serde_json::from_slice::<Value>(&body) else {
         return StatusCode::BAD_REQUEST;
@@ -175,6 +207,9 @@ pub fn router(app: App) -> Router {
         .route("/assets/{name}", get(file))
         .route("/events", get(events))
         .route("/api/state", get(state))
+        .route("/api/channel", get(channel))
+        .route("/api/categories", get(categories))
+        .route("/api/presets", get(presets))
         .route("/api/{action}", post(control))
         .route("/gsi", post(gsi))
         .with_state(app)

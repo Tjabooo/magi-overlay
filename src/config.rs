@@ -14,6 +14,28 @@ pub struct Config {
     pub overlay: Overlay,
     pub layout: Layout,
     pub cs2: crate::cs2::Cs2Config,
+    pub golive: GoLive,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct GoLive {
+    /// Shell command run once you're live, with the notification text on stdin and
+    /// $MAGI_TITLE, $MAGI_GAME, $MAGI_URL set (e.g. a Discord webhook post). Empty = off.
+    pub notify_command: String,
+    /// Scene shown when "end stream" is pressed, and seconds before the stream stops.
+    pub ending_scene: String,
+    pub end_delay_secs: u64,
+}
+
+impl Default for GoLive {
+    fn default() -> Self {
+        Self {
+            notify_command: String::new(),
+            ending_scene: "ending".into(),
+            end_delay_secs: 30,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
