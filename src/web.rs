@@ -123,6 +123,33 @@ async fn control(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Json<Value>, StatusCode> {
+    act(app, action, headers, body).await
+}
+
+// GET /api/channel and /api/presets exist too; a static route shadows /api/{action}, so their POSTs
+// need their own handlers.
+async fn post_channel(
+    State(app): State<App>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<Value>, StatusCode> {
+    act(app, "channel".into(), headers, body).await
+}
+
+async fn post_presets(
+    State(app): State<App>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<Value>, StatusCode> {
+    act(app, "presets".into(), headers, body).await
+}
+
+async fn act(
+    app: App,
+    action: String,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<Value>, StatusCode> {
     guard(&headers)?;
     let v: Value = if body.is_empty() {
         json!({})
@@ -134,6 +161,8 @@ async fn control(
         "golive" => Some(crate::golive::go(hub.clone(), v.clone()).await),
         "endstream" => Some(crate::golive::end(hub.clone(), v["after_secs"].as_u64()).await),
         "presets" => Some(crate::golive::save_preset(&v)),
+        "channel" => Some(crate::golive::update(hub.clone(), v.clone()).await),
+        "scene" => Some(crate::golive::scene(hub.clone(), v["scene"].as_str().unwrap_or("")).await),
         _ => None,
     };
     if let Some(r) = res {
@@ -207,9 +236,9 @@ pub fn router(app: App) -> Router {
         .route("/assets/{name}", get(file))
         .route("/events", get(events))
         .route("/api/state", get(state))
-        .route("/api/channel", get(channel))
+        .route("/api/channel", get(channel).post(post_channel))
         .route("/api/categories", get(categories))
-        .route("/api/presets", get(presets))
+        .route("/api/presets", get(presets).post(post_presets))
         .route("/api/{action}", post(control))
         .route("/gsi", post(gsi))
         .with_state(app)

@@ -4,6 +4,14 @@ All notable changes to this project are listed here ([Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-16
+
+- `POST /api/channel`: change title, category, tags, language and mature label mid-stream (no OBS involved);
+  the overlay shows the new title/category immediately instead of after the next 60 s poll.
+- `POST /api/scene {"scene": NAME}`: switch OBS scenes from outside OBS.
+- Fixed: `POST /api/channel` and `POST /api/presets` returned 405 because their GET routes shadowed the
+  generic POST handler.
+
 ## [0.2.0] - 2026-11-16
 
 - Go live without touching OBS: `POST /api/golive` sets the Twitch title, category, tags, language and

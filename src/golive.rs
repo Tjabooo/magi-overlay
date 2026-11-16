@@ -147,8 +147,9 @@ async fn obs(hub: &Hub) -> Result<Arc<Obs>> {
     Obs::connect(&hub.cfg.obs.url, hub.cfg.obs_password().as_deref()).await
 }
 
-/// `req`: title, game_id, game_name, tags, language, profanity, countdown_secs, start_scene, notify.
-pub async fn go(hub: Arc<Hub>, req: Value) -> Result<Value> {
+/// PATCH the channel from a request (title, game_id, tags, language, profanity); returns the body sent.
+/// Also updates the overlay's own copy right away (Helix is only polled every 60 s).
+async fn patch_channel(hub: &Hub, req: &Value) -> Result<Value> {
     let (h, id) = api()?;
     let mut body = json!({});
     if let Some(t) = req["title"]
@@ -174,6 +175,40 @@ pub async fn go(hub: Arc<Hub>, req: Value) -> Result<Value> {
     h.patch(&format!("/channels?broadcaster_id={id}"), &body)
         .await
         .context("updating the channel")?;
+    let mut mirror = json!({});
+    if let Some(t) = body.get("title") {
+        mirror["title"] = t.clone();
+    }
+    if let Some(g) = req["game_name"].as_str().filter(|g| !g.is_empty()) {
+        mirror["game"] = g.into();
+    }
+    if mirror.as_object().is_some_and(|o| !o.is_empty()) {
+        hub.merge("stream", mirror);
+    }
+    Ok(body)
+}
+
+/// Change the channel info only (mid-stream edits).
+pub async fn update(hub: Arc<Hub>, req: Value) -> Result<Value> {
+    let body = patch_channel(&hub, &req).await?;
+    Ok(json!({ "ok": true, "channel": body }))
+}
+
+/// Switch OBS's program scene.
+pub async fn scene(hub: Arc<Hub>, name: &str) -> Result<Value> {
+    if name.is_empty() {
+        bail!("no scene given");
+    }
+    let o = obs(&hub).await.context("OBS")?;
+    o.call("SetCurrentProgramScene", json!({ "sceneName": name }))
+        .await?;
+    Ok(json!({ "ok": true, "scene": name }))
+}
+
+/// `req`: title, game_id, game_name, tags, language, profanity, countdown_secs, start_scene, notify.
+pub async fn go(hub: Arc<Hub>, req: Value) -> Result<Value> {
+    let (h, id) = api()?;
+    let body = patch_channel(&hub, &req).await?;
     let mut last = req.clone();
     last["name"] = "Last stream".into();
     let _ = save_preset(&last);
